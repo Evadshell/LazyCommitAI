@@ -55,10 +55,12 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Send the file structure to the webview
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || '';
-const fileTree = buildFileTreeStructure(workspaceFolder);
-panel.webview.postMessage({ command: 'fileTree', content: fileTree });
-
-    panel.webview.html = getWebviewContent(panel.webview, context.extensionPath, fileTree);
+    const fileTree = buildFileTreeStructure(workspaceFolder);
+if (fileTree) {
+  panel.webview.html = getWebviewContent(panel.webview, context.extensionPath, fileTree);
+} else {
+  console.error("Failed to build file tree structure.");
+}
 
     // Handle messages from the webview
   // Handle messages from the webview
@@ -71,12 +73,12 @@ panel.webview.postMessage({ command: 'fileTree', content: fileTree });
                 panel.webview.postMessage({ command: 'displayFileContent', content: fileContent });
             } catch (err) {
                 console.error('Error reading file:', err);
+                panel.webview.postMessage({ command: 'displayFileContent', content: 'Error reading file.' });
             }
             break;
     }
 });
-
-  });
+});
   const disposable = vscode.commands.registerCommand(
     "lazycommitai.helloWorld",
     () => {
@@ -86,32 +88,41 @@ panel.webview.postMessage({ command: 'fileTree', content: fileTree });
 
   context.subscriptions.push(disposable, commitHelper, openDashboard);
 }
-function buildFileTreeStructure(dirPath: string): FileNode {
+function buildFileTreeStructure(dirPath: string): FileNode | null {
+  const ignoredFolders = ['node_modules', '.git', '.vscode' , '.next'];
+  const ignoredFiles = ['.DS_Store', 'Thumbs.db','package.json','package-lock.json'];
+
   try {
     const stats = fs.statSync(dirPath);
+    const baseName = path.basename(dirPath);
+
+    if (ignoredFolders.includes(baseName) || ignoredFiles.includes(baseName)) {
+      return null;
+    }
 
     if (stats.isDirectory()) {
+      const children = fs.readdirSync(dirPath)
+        .map((child) => buildFileTreeStructure(path.join(dirPath, child)))
+        .filter((child) => child !== null);
+
       return {
-        name: path.basename(dirPath),
+        name: baseName,
         path: dirPath,
         type: 'folder',
-        children: fs.readdirSync(dirPath).map((child) =>
-          buildFileTreeStructure(path.join(dirPath, child))
-        ),
+        children: children,
       };
     } else {
       return {
-        name: path.basename(dirPath),
+        name: baseName,
         path: dirPath,
         type: 'file',
       };
     }
   } catch (error) {
     console.error(`Error reading directory or file at ${dirPath}:`, error);
-    throw error; // Optionally handle errors in a way that won't crash your app
+    return null;
   }
 }
-
 // Function to generate webview content with the file structure
 function getWebviewContent(webview: vscode.Webview, extensionPath: string, fileTree: FileNode): string {
   const bundlePath = path.join(extensionPath, "webview", "dist", "bundle.js");
@@ -136,12 +147,16 @@ function getWebviewContent(webview: vscode.Webview, extensionPath: string, fileT
           <meta http-equiv="X-UA-Compatible" content="IE=edge">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Lazycommit Dashboard</title>
+          <style>
+                body { margin: 0; padding: 0; }
+            </style>
       </head>
       <body>
           <div id="root"></div>
           <h1>hi</h1>
           <script>
             window.fileTree = ${JSON.stringify(fileTree)};
+            window.vscode = acquireVsCodeApi();
           </script>
           <div id="root"></div>
           <script>${bundleJsContent}</script>

@@ -1,23 +1,52 @@
-.file-tree-container {
-  margin-right: 2rem;
+.file-tree {
+  font-size: 14px;
 }
 
 .file-item {
-  margin-left: 1rem;
+  margin: 2px 0;
+}
+
+.folder-name, .file-name {
+  display: block;
+  padding: 4px 8px;
   cursor: pointer;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.folder-name:hover, .file-name:hover {
+  background-color: #2a2d2e;
 }
 
 .folder-name {
-  font-weight: bold;
-  display: flex;
-  align-items: center;
+  color: #d7ba7d;
 }
 
 .file-name {
-  display: flex;
-  align-items: center;
+  color: #9cdcfe;
+}
+
+.file-name.selected {
+  background-color: #37373d;
 }
 
 .folder-contents {
-  margin-left: 1rem;
+  margin-left: 16px;
+}
+
+.folder-name::before, .file-name::before {
+  margin-right: 5px;
+  font-size: 0.9em;
+}
+
+.folder-name::before {
+  content: '▶';
+}
+
+.folder-name.open::before {
+  content: '▼';
+}
+
+.file-name::before {
+  content: '📄';
 }
