@@ -9,6 +9,9 @@ interface FileNode {
   children?: FileNode[]; // Only folders will have children
 }
 dotenv.config();
+import Groq from "groq-sdk";
+
+const groq = new Groq({ apiKey: "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" });
 import { generateCommitMessage } from "./aiHelper";
 import { commitAndPushChanges } from "./gitHelper";
 import { getCurrentGitHubRepo } from "./repoHelper";
@@ -66,14 +69,25 @@ if (fileTree) {
   // Handle messages from the webview
   panel.webview.onDidReceiveMessage(async (message) => {
     switch (message.type) {
-        case 'getFileContent':
+        case 'getFileSummary':
             const filePath = message.data;
             try {
                 const fileContent = fs.readFileSync(filePath, 'utf-8');
-                panel.webview.postMessage({ command: 'displayFileContent', content: fileContent });
+                const summary = await getFileSummary(fileContent);
+                panel.webview.postMessage({ command: 'displayFileSummary', content: summary });
             } catch (err) {
                 console.error('Error reading file:', err);
-                panel.webview.postMessage({ command: 'displayFileContent', content: 'Error reading file.' });
+                panel.webview.postMessage({ command: 'displayFileSummary', content: 'Error reading file.' });
+            }
+            break;
+        case 'improveCode':
+            const { code, instructions } = message.data;
+            try {
+                const improvedCode = await improveCode(code, instructions);
+                panel.webview.postMessage({ command: 'displayImprovedCode', content: improvedCode });
+            } catch (err) {
+                console.error('Error improving code:', err);
+                panel.webview.postMessage({ command: 'displayImprovedCode', content: 'Error improving code.' });
             }
             break;
     }
@@ -87,6 +101,41 @@ if (fileTree) {
   );
 
   context.subscriptions.push(disposable, commitHelper, openDashboard);
+}
+async function getFileSummary(fileContent: string): Promise<string> {
+  const chatCompletion = await groq.chat.completions.create({
+      messages: [
+          {
+              role: "system",
+              content: "You are an AI assistant that summarizes code files. Provide a brief overview of the file's contents and purpose."
+          },
+          {
+              role: "user",
+              content: `Summarize the following code:\n\n${fileContent}`
+          }
+      ],
+      model: "llama3-8b-8192",
+  });
+
+  return chatCompletion.choices[0]?.message?.content || "Unable to generate summary.";
+}
+
+async function improveCode(code: string, instructions: string): Promise<string> {
+  const chatCompletion = await groq.chat.completions.create({
+      messages: [
+          {
+              role: "system",
+              content: "You are an AI assistant that improves code based on given instructions. Provide the improved code along with explanations of the changes made."
+          },
+          {
+              role: "user",
+              content: `Improve the following code based on these instructions: ${instructions}\n\nCode:\n${code}`
+          }
+      ],
+      model: "llama3-8b-8192",
+  });
+
+  return chatCompletion.choices[0]?.message?.content || "Unable to improve code.";
 }
 function buildFileTreeStructure(dirPath: string): FileNode | null {
   const ignoredFolders = ['node_modules', '.git', '.vscode' , '.next'];

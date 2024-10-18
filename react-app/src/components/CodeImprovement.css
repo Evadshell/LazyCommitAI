@@ -1,0 +1,17 @@
+.code-improvement-container {
+    margin-bottom: 20px;
+}
+
+.code-improvement-container form {
+    display: flex;
+    flex-direction: column;
+}
+
+.code-improvement-container textarea,
+.code-improvement-container input[type="text"] {
+    margin-bottom: 10px;
+}
+
+.code-improvement-container button {
+    align-self: flex-start;
+}

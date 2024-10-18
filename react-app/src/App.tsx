@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import FileTree from "./components/FileTree";
+import CodeImprovement from "./components/CodeImprovement";
 import "./App.css";
 
 declare global {
@@ -11,8 +12,9 @@ declare global {
 
 function App() {
     const [fileTree, setFileTree] = useState(null);
-    const [fileContent, setFileContent] = useState("");
+    const [fileSummary, setFileSummary] = useState("");
     const [selectedFile, setSelectedFile] = useState("");
+    const [improvedCode, setImprovedCode] = useState("");
 
     useEffect(() => {
         if (window.fileTree) {
@@ -21,10 +23,12 @@ function App() {
 
         const handleMessage = (event: MessageEvent) => {
             const message = event.data;
-            if (message.command === "displayFileContent") {
-                setFileContent(message.content);
+            if (message.command === "displayFileSummary") {
+                setFileSummary(message.content);
             } else if (message.command === "fileTree") {
                 setFileTree(message.content);
+            } else if (message.command === "displayImprovedCode") {
+                setImprovedCode(message.content);
             }
         };
 
@@ -37,7 +41,7 @@ function App() {
 
     const handleFileClick = (filePath: string) => {
         setSelectedFile(filePath);
-        window.vscode?.postMessage({ type: "getFileContent", data: filePath });
+        window.vscode?.postMessage({ type: "getFileSummary", data: filePath });
     };
 
     return (
@@ -54,9 +58,16 @@ function App() {
                     <p>Loading file structure...</p>
                 )}
             </div>
-            <div className="file-content-container">
-                <h2>File Content: {selectedFile}</h2>
-                <pre>{fileContent || "Select a file to view its content."}</pre>
+            <div className="content-container">
+                <div className="file-summary-container">
+                    <h2>File Summary: {selectedFile}</h2>
+                    <pre>{fileSummary || "Select a file to view its summary."}</pre>
+                </div>
+                <CodeImprovement setImprovedCode={setImprovedCode} />
+                <div className="improved-code-container">
+                    <h2>Improved Code</h2>
+                    <pre>{improvedCode || "Improved code will appear here."}</pre>
+                </div>
             </div>
         </div>
     );
