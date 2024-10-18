@@ -1,0 +1,23 @@
+.file-tree-container {
+  margin-right: 2rem;
+}
+
+.file-item {
+  margin-left: 1rem;
+  cursor: pointer;
+}
+
+.folder-name {
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+}
+
+.file-name {
+  display: flex;
+  align-items: center;
+}
+
+.folder-contents {
+  margin-left: 1rem;
+}

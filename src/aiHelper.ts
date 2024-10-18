@@ -4,7 +4,7 @@ dotenv.config();
 
 export async function generateCommitMessage(changesSummary: string): Promise<string> {
  console.log(process.env.GEMINI_TOKEN);
- const genAI = new GoogleGenerativeAI(process.env.GEMINI_TOKEN);
+ const genAI = new GoogleGenerativeAI("AIzaSyBnrTkHanipQmjmJDgT2WQc9fk7IqOt4OE");
  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     try {
         const prompt = `

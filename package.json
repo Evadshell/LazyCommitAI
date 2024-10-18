@@ -20,6 +20,10 @@
       {
         "command": "extension.commitAndPush",
         "title": "Commit and Push Changes"
+      },
+      {
+        "command": "extension.openDashboard",
+        "title": "Open Lazy Commit Dashboard"
       }
     ]
   },
@@ -34,7 +38,7 @@
   "devDependencies": {
     "@types/dotenv": "^6.1.1",
     "@types/mocha": "^10.0.7",
-    "@types/node": "20.x",
+    "@types/node": "^20.16.12",
     "@types/vscode": "^1.94.0",
     "@typescript-eslint/eslint-plugin": "^7.14.1",
     "@typescript-eslint/parser": "^7.11.0",
@@ -45,6 +49,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "webpack-cli": "^5.1.4"
   }
 }

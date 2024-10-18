@@ -1,0 +1,29 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+.file-tree {
+    border: 1px solid #ddd;
+    padding: 10px;
+    width: 30%;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.folder {
+    font-weight: bold;
+    margin: 5px 0;
+}
+
+.file {
+    margin: 5px 0;
+    cursor: pointer;
+}
+
+.file-summary {
+    margin-left: 20px;
+    border: 1px solid #ddd;
+    padding: 10px;
+    width: 60%;
+    background-color: #f9f9f9;
+}

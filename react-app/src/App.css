@@ -1,0 +1,29 @@
+.app-container {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+  }
+  
+  .file-tree-container, .file-content-container {
+    width: 50%;
+    background: #f4f4f4;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  h3 {
+    margin-bottom: 10px;
+  }
+  
+  pre {
+    background-color: #e8e8e8;
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+    max-height: 500px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  
