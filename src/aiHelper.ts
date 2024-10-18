@@ -3,16 +3,9 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 dotenv.config();
 
 export async function generateCommitMessage(changesSummary: string): Promise<string> {
-    const geminiToken = process.env.GEMINI_TOKEN;
-    if (!geminiToken) {
-        throw new Error('GEMINI_TOKEN is not defined in the environment variables');
-    }
-    const genAI = new GoogleGenerativeAI(geminiToken);
-    const geminiModel = process.env.GEMINI_MODEL;
-    if (!geminiModel) {
-        throw new Error('GEMINI_MODEL is not defined in the environment variables');
-    }
-    const model = genAI.getGenerativeModel({ model: geminiModel });
+ console.log(process.env.GEMINI_TOKEN);
+ const genAI = new GoogleGenerativeAI(process.env.GEMINI_TOKEN);
+ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     try {
         const prompt = `
         You are a Git commit message generator. Based on the following code changes, generate a concise and professional commit message that summarizes the changes.

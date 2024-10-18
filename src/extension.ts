@@ -1,6 +1,9 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 import { generateCommitMessage } from "./aiHelper";
 import { commitAndPushChanges } from "./gitHelper";
 import { getCurrentGitHubRepo } from "./repoHelper";
@@ -8,6 +11,8 @@ import { getChangedFilesSummary } from "./fileChangesHelper";
 import { showInfoMessage, showErrorMessage } from "./uiHelper";
 export function activate(context: vscode.ExtensionContext) {
   console.log('Congratulations, your extension "lazycommitai" is now active!');
+  console.log('Loaded environment variables:', process.env);
+
   let commitHelper = vscode.commands.registerCommand(
     "extension.commitAndPush",
     async () => {
@@ -18,11 +23,13 @@ export function activate(context: vscode.ExtensionContext) {
 
         // Fetch the changes summary for the current workspace
         const changesSummary = await getChangedFilesSummary();
+console.log(changesSummary);
 
         const commitMessage = await generateCommitMessage(changesSummary);
+        console.log(commitMessage);
         showInfoMessage(`Generated commit message: ${commitMessage}`);
 
-        commitAndPushChanges(commitMessage);
+        // commitAndPushChanges(commitMessage);
       } else {
         showErrorMessage("Could not find the GitHub repository.");
       }
