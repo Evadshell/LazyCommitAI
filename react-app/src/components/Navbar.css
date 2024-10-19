@@ -1,0 +1,46 @@
+.navbar {
+    background: linear-gradient(45deg, #2196F3, #21CBF3);
+    padding: 1rem;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .nav-item {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .nav-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+    z-index: -1;
+  }
+  
+  .nav-item:hover::before {
+    left: 0;
+  }
+  
+  .nav-item.active {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  .nav-item:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+  }

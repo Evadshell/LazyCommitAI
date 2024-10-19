@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Toaster } from "react-hot-toast";
+import { Timeline, Card, Button, Typography } from "antd";
+import { ClockCircleOutlined, RollbackOutlined } from "@ant-design/icons";
+
+const { Title, Text } = Typography;
 
 interface CommitNode {
   hash: string;
-  message: string;
+  message:  string;
   date: string;
 }
 
@@ -34,22 +37,33 @@ const CommitTree: React.FC = () => {
   };
 
   return (
-    <div>
-      <Toaster position="top-right" reverseOrder={false} />
-
-      <h2>Commit History</h2>
-      <ul className="commit-tree">
+    <Card className="commit-tree-container">
+      <Title level={3}>Commit History</Title>
+      <Timeline mode="left">
         {commitHistory.map((commit) => (
-          <li key={commit.hash}>
-            <div className="commit-details">
-              <span className="commit-message">{commit.message}</span> -{" "}
-              <span className="commit-date">{commit.date}</span>
-              <button onClick={() => handleRevert(commit.hash)}>Revert</button>
-            </div>
-          </li>
+          <Timeline.Item
+            key={commit.hash}
+            dot={<ClockCircleOutlined style={{ fontSize: '16px' }} />}
+          >
+            <Card className="commit-card">
+              <Text strong>{commit.message}</Text>
+              <br />
+              <Text type="secondary">{commit.date}</Text>
+              <br />
+              <Text code>{commit.hash.substring(0, 7)}</Text>
+              <Button
+                icon={<RollbackOutlined />}
+                onClick={() => handleRevert(commit.hash)}
+                size="small"
+                style={{ marginLeft: '8px' }}
+              >
+                Revert
+              </Button>
+            </Card>
+          </Timeline.Item>
         ))}
-      </ul>
-    </div>
+      </Timeline>
+    </Card>
   );
 };
 

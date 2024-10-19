@@ -24,6 +24,10 @@
       {
         "command": "extension.openDashboard",
         "title": "Open Lazy Commit Dashboard"
+      },
+      {
+        "command": "extension.indexWorkspace",
+        "title": "LazyCommitAI: Index Workspace"
       }
     ]
   },
@@ -49,9 +53,12 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
+    "@huggingface/hub": "^0.18.2",
+    "@huggingface/inference": "^2.8.1",
     "@huggingface/transformers": "^3.0.0",
     "dotenv": "^16.4.5",
     "groq-sdk": "^0.7.0",
+    "natural": "^8.0.1",
     "react-hot-toast": "^2.4.1",
     "webpack-cli": "^5.1.4"
   }

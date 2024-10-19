@@ -1,116 +1,141 @@
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: #1e1e1e;
-  color: #d4d4d4;
-}
-
-.app {
-  display: flex;
-  flex-direction: column;
+.app-container {
   height: 100vh;
 }
 
-.navbar {
-  background-color: #2d2d2d;
-  padding: 10px 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.navbar h1 {
-  margin: 0;
-  font-size: 1.2rem;
-  color: #ffffff;
-}
-
-.content {
+.logo {
+  height: 32px;
+  margin: 16px;
+  background: #f0f2f5;
+  color: #001529;
   display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-
-.file-explorer {
-  width: 250px;
-  background-color: #252526;
-  padding: 10px;
-  overflow-y: auto;
-}
-
-.file-explorer h2 {
-  font-size: 1rem;
-  margin-top: 0;
-  margin-bottom: 10px;
-  color: #ffffff;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
 }
 
 .main-content {
-  flex: 1;
-  padding: 20px;
+  padding: 24px;
+  background: #fff;
+}
+
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.content-container {
+  background-color: #fff;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.content-card {
+  background-color: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.file-tree-container {
+  padding: 16px;
+  overflow-y: auto;
+  border-top: 1px solid #f0f0f0;
+  margin-top: 16px;
+}
+
+pre {
+  background-color: #f5f5f5;
+  padding: 16px;
+  border-radius: 4px;
+  overflow-x: auto;
+  border: 1px solid #e8e8e8;
+}
+
+.search-results ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.search-results li {
+  margin-bottom: 16px;
+  cursor: pointer;
+  padding: 12px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+  border: 1px solid #f0f0f0;
+}
+
+.search-results li:hover {
+  background-color: #f5f5f5;
+}
+
+/* Ant Design overrides */
+.ant-layout {
+  background-color: #fff;
+}
+
+.ant-layout-sider {
+  background-color: #fff;
+  border-right: 1px solid #f0f0f0;
+}
+
+.ant-menu-inline {
+  border-right: none;
+}
+
+.ant-typography {
+  color: #262626;
+}
+
+.ant-input-search {
+  margin-bottom: 16px;
+}
+
+.ant-btn-primary {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.ant-btn-primary:hover,
+.ant-btn-primary:focus {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+}
+.index-button {
+  margin: 16px;
+  width: calc(100% - 32px);
+  padding: 8px;
+  background-color: #1890ff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.index-button:hover {
+  background-color: #40a9ff;
+}
+
+.global-search {
+  padding: 16px;
+}
+
+.search-results {
+  margin-top: 16px;
+  max-height: 300px;
   overflow-y: auto;
 }
 
-.file-content-container, .summary-container {
-  background-color: #1e1e1e;
-  border: 1px solid #3c3c3c;
-  border-radius: 4px;
-  padding: 10px;
-  margin-bottom: 20px;
-}
-
-.file-content-container h3, .summary-container h3 {
-  margin-top: 0;
-  font-size: 1rem;
-  color: #ffffff;
-}
-
-.file-content, .summary-content {
-  background-color: #252526;
-  border: 1px solid #3c3c3c;
-  border-radius: 4px;
-  padding: 10px;
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-size: 13px;
-  white-space: pre-wrap;
-  overflow-x: auto;
-}
-
-button {
-  background-color: #0e639c;
-  color: #ffffff;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
-}
-
-button:hover {
-  background-color: #1177bb;
-}
-
-button:disabled {
-  background-color: #555555;
-  cursor: not-allowed;
-}
-
-.improvement-form {
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.improvement-form input {
-  flex: 1;
+.search-results .ant-list-item {
   padding: 8px;
-  font-size: 14px;
-  background-color: #3c3c3c;
-  border: 1px solid #555555;
-  color: #ffffff;
-  border-radius: 4px;
+  border-bottom: 1px solid #f0f0f0;
 }
 
-.improvement-form input::placeholder {
-  color: #a0a0a0;
+.search-results .ant-list-item:last-child {
+  border-bottom: none;
 }

@@ -2,6 +2,8 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 import * as dotenv from "dotenv";
+import * as natural from 'natural';
+import { indexWorkspace,loadFileIndex } from "./fileIndexer";
 interface FileNode {
   name: string;
   path: string;
@@ -43,14 +45,57 @@ export function activate(context: vscode.ExtensionContext) {
         console.log(commitMessage);
         showInfoMessage(`Generated commit message: ${commitMessage}`);
 
-        commitAndPushChanges(commitMessage);
+        // commitAndPushChanges(commitMessage);
+        const userConfirmation = await vscode.window.showInformationMessage(
+          `Generated commit message: ${commitMessage}. Do you want to proceed with this commit?`,
+          { modal: true },
+          "Yes",
+          "No",
+          "Change"
+        );
+
+        if (userConfirmation === "Yes") {
+          commitAndPushChanges(commitMessage);
+          showInfoMessage("Commit successful!");
+        } else if (userConfirmation === "Change") {
+          const userInput = await vscode.window.showInputBox({
+            prompt: `Enter a new commit message:`,
+            value: commitMessage,
+            placeHolder: "Type your new commit message here",
+          });
+
+          if (userInput !== undefined) {
+            const finalCommitMessage = userInput.trim() || commitMessage;
+            commitAndPushChanges(finalCommitMessage);
+            showInfoMessage("Commit successful!");
+          } else {
+            showInfoMessage("Commit canceled.");
+          }
+        } else {
+          showInfoMessage("Commit canceled.");
+        }
       } else {
         showErrorMessage("Could not find the GitHub repository.");
       }
     }
   );
   // Register command for the LazyCommit dashboard
-
+  let indexWorkspaceCommand = vscode.commands.registerCommand(
+    "extension.indexWorkspace",
+    async () => {
+      try {
+        vscode.window.showInformationMessage("Indexing workspace...");
+        await indexWorkspace();
+        vscode.window.showInformationMessage("Workspace indexed successfully!");
+      } catch (error) {
+        if (error instanceof Error) {
+          vscode.window.showErrorMessage(`Error indexing workspace: ${error.message}`);
+        } else {
+          vscode.window.showErrorMessage(`Error indexing workspace: ${String(error)}`);
+        }
+      }
+    }
+  );
   let openDashboard = vscode.commands.registerCommand(
     "extension.openDashboard",
     () => {
@@ -127,7 +172,21 @@ export function activate(context: vscode.ExtensionContext) {
               panel.webview.postMessage({
                 command: "displayBreakSuggestion",
                 content: breakSuggestion,
+                filePath: filePathToBreak,
               });
+            } catch (err) {
+              console.error("Error breaking file:", err);
+              panel.webview.postMessage({
+                command: "displayBreakSuggestion",
+                content: "Error breaking file.",
+              });
+            }
+            break;
+//TODO: see this breakdown function properly
+          case "applyBreakdown":
+            try {
+              await handleFileBreakdownRequest(filePathToBreak, panel);
+              
             } catch (err) {
               console.error("Error breaking file:", err);
               panel.webview.postMessage({
@@ -167,6 +226,9 @@ export function activate(context: vscode.ExtensionContext) {
               });
             }
             break;
+            case "globalSearch":
+              await handleGlobalSearch(message.data, panel);
+              break;
         }
       });
     }
@@ -178,7 +240,92 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  context.subscriptions.push(disposable, commitHelper, openDashboard);
+  context.subscriptions.push(disposable, commitHelper, openDashboard,indexWorkspaceCommand);
+}
+import { GoogleGenerativeAI } from '@google/generative-ai';
+dotenv.config();
+// ... (other imports and code remain the same)
+async function handleGlobalSearch(query: string, panel: vscode.WebviewPanel) {
+  const fileIndex = loadFileIndex();
+  console.log(`Performing global search for query: ${query}`);
+  console.log(`Loaded file index: `, fileIndex);
+
+  if (Object.keys(fileIndex).length === 0) {
+    panel.webview.postMessage({
+      command: "searchResults",
+      results: [],
+      error: "Workspace not indexed. Please run the 'Index Workspace' command first.",
+    });
+    return;
+  }
+
+  const searchData = Object.entries(fileIndex).map(([filePath, fileInfo]) => ({
+    file: filePath,
+    summary: fileInfo.summary,
+    features: fileInfo.features.join(', '),
+  }));
+
+  try {
+    const refinedResults = await getRefinedSearchResults(query, searchData);
+    panel.webview.postMessage({
+      command: "searchResults",
+      results: refinedResults,
+    });
+  } catch (error) {
+    console.error('Error refining search results with Gemini AI:', error);
+    panel.webview.postMessage({
+      command: "searchResults",
+      results: [],
+      error: 'Error refining search results with AI. Please try again later.',
+    });
+  }
+}
+
+async function getRefinedSearchResults(query: string, searchData: Array<{ file: string; summary: string; features: string }>): Promise<Array<{ file: string; summary: string; features: string[] }>> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  const genAI = new GoogleGenerativeAI("AIzaSyBnrTkHanipQmjmJDgT2WQc9fk7IqOt4OE");
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+  const prompt = `
+    Based on the query: "${query}", analyze the following code summaries and features. 
+    Provide a list of the most relevant results in descending order of relevance with a brief explanation of why they match the query.
+    
+    Code Summaries and Features:
+    ${searchData.map(data => `File: ${data.file}\nSummary: ${data.summary}\nFeatures: ${data.features}`).join('\n\n')}
+  `;
+
+  const result = await model.generateContent(prompt);
+
+  const refinedResults = parseAIResponse(result.response.text());
+  return refinedResults;
+}
+
+function parseAIResponse(responseText: string): Array<{ file: string; summary: string; features: string[] }> {
+  // Custom logic to parse the AI response and transform it into the required data structure.
+  // You'll need to adjust this based on how Gemini AI returns the results.
+  const parsedResults: Array<{ file: string; summary: string; features: string[] }> = [];
+
+  const lines = responseText.split('\n');
+  let currentFile: any = null;
+
+  lines.forEach(line => {
+    if (line.startsWith('File:')) {
+      if (currentFile) {
+        parsedResults.push(currentFile);
+      }
+      currentFile = { file: line.replace('File: ', ''), summary: '', features: [] };
+    } else if (line.startsWith('Summary:')) {
+      currentFile.summary = line.replace('Summary: ', '');
+    } else if (line.startsWith('Features:')) {
+      currentFile.features = line.replace('Features: ', '').split(', ');
+    }
+  });
+
+  if (currentFile) {
+    parsedResults.push(currentFile);
+  }
+
+  return parsedResults;
 }
 async function getFileSummary(fileContent: string): Promise<string> {
   const chatCompletion = await groq.chat.completions.create({
@@ -200,7 +347,92 @@ async function getFileSummary(fileContent: string): Promise<string> {
     chatCompletion.choices[0]?.message?.content || "Unable to generate summary."
   );
 }
+async function handleFileBreakdownRequest(
+  data: { filePath: string; suggestion: string },
+  panel: vscode.WebviewPanel
+) {
+  try {
+    const { filePath, suggestion } = data;
+    const breakdowns = parseBreakdownSuggestion(suggestion);
 
+    const confirmed = await vscode.window.showInformationMessage(
+      "Do you want to apply this breakdown suggestion?",
+      { modal: true },
+      "Apply"
+    );
+
+    if (confirmed === "Apply") {
+      applyFileBreakdown(breakdowns, filePath);
+      vscode.window.showInformationMessage(
+        "File breakdown applied successfully!"
+      );
+
+      // Refresh the file tree
+      const workspaceFolder =
+        vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || "";
+      const updatedFileTree = buildFileTreeStructure(workspaceFolder);
+      panel.webview.postMessage({
+        command: "updateFileTree",
+        content: updatedFileTree,
+      });
+    }
+  } catch (err) {
+    console.error("Error applying file breakdown:", err);
+    vscode.window.showErrorMessage("Error applying file breakdown.");
+  }
+}
+
+function parseBreakdownSuggestion(
+  suggestion: string
+): Array<{ fileName: string; fileContent: string }> {
+  const files: Array<{ fileName: string; fileContent: string }> = [];
+  const fileRegex = /File: (.+)\n([\s\S]+?)(?=\nFile: |\n$)/g;
+  let match;
+
+  while ((match = fileRegex.exec(suggestion)) !== null) {
+    const [, fileName, fileContent] = match;
+    files.push({ fileName: fileName.trim(), fileContent: fileContent.trim() });
+  }
+
+  return files;
+}
+
+function applyFileBreakdown(
+  breakdowns: Array<{ fileName: string; fileContent: string }>,
+  originalFilePath: string
+) {
+  const baseDir = path.dirname(originalFilePath);
+
+  breakdowns.forEach(({ fileName, fileContent }) => {
+    const newFilePath = path.join(baseDir, fileName);
+    fs.writeFileSync(newFilePath, fileContent, "utf-8");
+  });
+
+  // Optionally, you can delete or rename the original file
+  // fs.unlinkSync(originalFilePath);
+}
+
+async function getFileBreakSuggestion(fileContent: string): Promise<string> {
+  const chatCompletion = await groq.chat.completions.create({
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are an AI assistant that analyzes code files and suggests how to break them into smaller, more manageable files. Provide detailed suggestions on how to split the file, including new file names and their contents. Use the format 'File: [filename]' followed by the file content for each suggested file.",
+      },
+      {
+        role: "user",
+        content: `Analyze the following code and suggest how to break it into smaller files:\n\n${fileContent}`,
+      },
+    ],
+    model: "mixtral-8x7b-32768",
+  });
+
+  return (
+    chatCompletion.choices[0]?.message?.content ||
+    "Unable to generate file break suggestion."
+  );
+}
 async function improveCode(
   code: string,
   instructions: string
@@ -222,27 +454,6 @@ async function improveCode(
 
   return (
     chatCompletion.choices[0]?.message?.content || "Unable to improve code."
-  );
-}
-async function getFileBreakSuggestion(fileContent: string): Promise<string> {
-  const chatCompletion = await groq.chat.completions.create({
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are an AI assistant that analyzes code files and suggests how to break them into smaller, more manageable files. Provide detailed suggestions on how to split the file, including new file names and their contents.",
-      },
-      {
-        role: "user",
-        content: `Analyze the following code and suggest how to break it into smaller files:\n\n${fileContent}`,
-      },
-    ],
-    model: "llama3-8b-8192",
-  });
-
-  return (
-    chatCompletion.choices[0]?.message?.content ||
-    "Unable to generate file break suggestion."
   );
 }
 function buildFileTreeStructure(dirPath: string): FileNode | null {
@@ -319,12 +530,18 @@ function getWebviewContent(
             </style>
       </head>
       <body>
-          <div id="root"></div>          <script>
+         <button id="indexWorkspace">Index Workspace</button>
+    <div id="root"></div>          <script>
             window.fileTree = ${JSON.stringify(fileTree)};
             window.vscode = acquireVsCodeApi();
           </script>
           <div id="root"></div>
           <script>${bundleJsContent}</script>
+        <script>
+          document.getElementById('indexWorkspace').addEventListener('click', () => {
+            window.vscode.postMessage({ type: 'indexWorkspace' });
+          });
+        </script>
       </body>
       </html>
   `;

@@ -1,12 +1,34 @@
 import React, { useEffect, useState } from "react";
 import FileTree from "./components/FileTree";
 import CodeImprovement from "./components/CodeImprovement";
-
 import Navbar from "./components/Navbar";
 import FileBreaker from "./components/FileBreaker";
+import {    Menu, Input,    Button } from 'antd';
+import {
+  FileTextOutlined,
+  CodeOutlined,
+  RobotOutlined,
+  BranchesOutlined,
+  HistoryOutlined,
+  SearchOutlined
+} from '@ant-design/icons';
 import CopilotPromptGenerator from "./components/CopilotPromptGenerator";
-import "./App.css";
 import CommitTree from "./components/CommitTree";
+import GlobalSearch from "./components/GlobalSearch";
+import { Spin, message, Layout, Typography, Switch } from 'antd';
+import { motion } from "framer-motion";
+import "./App.css";
+
+const { Content, Sider } = Layout;
+const { Title } = Typography;
+const { Search } = Input;
+
+ 
+interface SearchResult {
+  file: string;
+  summary: string;
+  features: string[];
+}
 
 declare global {
   interface Window {
@@ -16,13 +38,17 @@ declare global {
 }
 
 function App() {
-  const [fileTree, setFileTree] = useState(null);
+  const [fileTree, setFileTree] = useState (null);
   const [fileSummary, setFileSummary] = useState("");
   const [selectedFile, setSelectedFile] = useState("");
   const [improvedCode, setImprovedCode] = useState("");
   const [breakSuggestion, setBreakSuggestion] = useState("");
   const [activeTab, setActiveTab] = useState("fileSummary");
-
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [siderCollapsed, setSiderCollapsed] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [searchError, setSearchError] = useState<string | null>(null);
   useEffect(() => {
     if (window.fileTree) {
       setFileTree(window.fileTree);
@@ -30,14 +56,25 @@ function App() {
 
     const handleMessage = (event: MessageEvent) => {
       const message = event.data;
-      if (message.command === "displayFileSummary") {
-        setFileSummary(message.content);
-      } else if (message.command === "fileTree") {
-        setFileTree(message.content);
-      } else if (message.command === "displayImprovedCode") {
-        setImprovedCode(message.content);
-      } else if (message.command === "displayBreakSuggestion") {
-        setBreakSuggestion(message.content);
+      setIsLoading(false);
+      switch (message.command) {
+        case "displayFileSummary":
+          setFileSummary(message.content);
+          break;
+        case "fileTree":
+          setFileTree(message.content);
+          break;
+        case "displayImprovedCode":
+          setImprovedCode(message.content);
+          break;
+        case "displayBreakSuggestion":
+          setBreakSuggestion(message.content);
+          break;
+        case "searchResults":
+          setSearchResults(message.results);
+          break;
+        default:
+          console.warn("Unhandled message:", message);
       }
     };
 
@@ -50,54 +87,131 @@ function App() {
 
   const handleFileClick = (filePath: string) => {
     setSelectedFile(filePath);
+    setIsLoading(true);
     window.vscode?.postMessage({ type: "getFileSummary", data: filePath });
   };
 
   const handleBreakFile = () => {
+    setIsLoading(true);
     window.vscode?.postMessage({ type: "breakFile", data: selectedFile });
   };
 
+  const handleSearch = (query: string) => {
+    try {
+      window.vscode.postMessage({ type: 'globalSearch', data: query });
+      setSearchError(null);
+    } catch (error) {
+      setSearchError("An error occurred while searching.");
+    }
+    window.vscode.postMessage({ type: 'globalSearch', data: query });
+  };
+
+  const handleFileSelect = (filePath: string) => {
+    setSelectedFile(filePath);
+    setIsLoading(true);
+    window.vscode.postMessage({ type: 'getFileSummary', data: filePath });
+  };
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+  };
+  const renderContent = () => {
+    if (isLoading) {
+      return <Spin size="large" />;
+    }
+
+    switch (activeTab) {
+      case "fileSummary":
+        return (
+          <div className="content-card">
+            <Title level={4}>File Summary: {selectedFile}</Title>
+            <pre>{fileSummary || "Select a file to view its summary."}</pre>
+            <Button onClick={handleBreakFile} type="primary">Suggest File Break</Button>
+          </div>
+        );
+      case "codeImprovement":
+        return <CodeImprovement setImprovedCode={setImprovedCode} />;
+      case "copilotPrompt":
+        return <CopilotPromptGenerator />;
+      case "improvedCode":
+        return (
+          <div className="content-card">
+            <Title level={4}>Improved Code</Title>
+            <pre>{improvedCode || "Improved code will appear here."}</pre>
+          </div>
+        );
+      case "fileBreaker":
+        return <FileBreaker filePath={selectedFile} />;
+      case "commitHistory":
+        return <CommitTree />;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="app-container">
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div className="main-content">
-        <div className="file-tree-container">
-          <h2>Project Structure</h2>
-          {fileTree ? (
-            <FileTree
-              fileStructure={fileTree}
-              onFileClick={handleFileClick}
-              selectedFile={selectedFile}
-            />
-          ) : (
-            <p>Loading file structure...</p>
-          )}
-        </div>
-        <div className="content-container">
-          {activeTab === "fileSummary" && (
-            <div className="file-summary-container">
-              <h2>File Summary: {selectedFile}</h2>
-              <pre>{fileSummary || "Select a file to view its summary."}</pre>
-              <button onClick={handleBreakFile}>Suggest File Break</button>
-            </div>
-          )}
-          {activeTab === "codeImprovement" && (
-            <CodeImprovement setImprovedCode={setImprovedCode} />
-          )}
-          {activeTab === "copilotPrompt" && <CopilotPromptGenerator />}
-          {activeTab === "improvedCode" && (
-            <div className="improved-code-container">
-              <h2>Improved Code</h2>
-              <pre>{improvedCode || "Improved code will appear here."}</pre>
-            </div>
-          )}
-          {activeTab === "fileBreaker" && (
-            <FileBreaker breakSuggestion={breakSuggestion} />
-          )}
-          {activeTab === "commitHistory" && <CommitTree />}
-        </div>
+    <Layout className="app-container">
+    <Sider
+      width={250}
+      collapsible
+      collapsed={siderCollapsed}
+      onCollapse={setSiderCollapsed}
+      theme="light"
+    >
+      <div className="logo">CodeSnip</div>
+      <GlobalSearch 
+          onSearch={handleSearch} 
+          searchResults={searchResults} 
+          isLoading={isLoading}
+          error={searchError}
+        />
+      <Menu mode="inline" selectedKeys={[activeTab]} onClick={({ key }) => setActiveTab(key as string)}>
+        <Menu.Item key="fileSummary" icon={<FileTextOutlined />}>File Summary</Menu.Item>
+        <Menu.Item key="codeImprovement" icon={<CodeOutlined />}>Code Improvement</Menu.Item>
+        <Menu.Item key="copilotPrompt" icon={<RobotOutlined />}>Copilot Prompt</Menu.Item>
+        <Menu.Item key="fileBreaker" icon={<BranchesOutlined />}>File Breaker</Menu.Item>
+        <Menu.Item key="commitHistory" icon={<HistoryOutlined />}>Commit History</Menu.Item>
+      </Menu>
+      <div className="file-tree-container">
+        <Title level={5}>Project Structure</Title>
+        {fileTree ? (
+          <FileTree
+            fileStructure={fileTree}
+            onFileClick={handleFileClick}
+            selectedFile={selectedFile}
+          />
+        ) : (
+          <p>Loading file structure...</p>
+        )}
       </div>
-    </div>
+    </Sider>
+    <Layout>
+      <Content className="main-content">
+        <div className="content-header">
+          <Title level={3}>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1).replace(/([A-Z])/g, ' $1').trim()}</Title>
+          <Search
+            placeholder="Global search..."
+            onSearch={handleSearch}
+            style={{ width: 250 }}
+          />
+        </div>
+        <div className="content-container">{renderContent()}</div>
+        {searchResults.length > 0 && (
+          <div className="search-results content-card">
+            <Title level={4}>Search Results</Title>
+            <ul>
+              {searchResults.map((result, index) => (
+                <li key={index} onClick={() => handleFileClick(result.file)}>
+                  <strong>{result.file}</strong>
+                  <p>Summary: {result.summary}</p>
+                  <p>Matching Features: {result.features.join(", ")}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </Content>
+    </Layout>
+  </Layout>
   );
 }
 
