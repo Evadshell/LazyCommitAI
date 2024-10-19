@@ -57,6 +57,7 @@ function App() {
     const handleMessage = (event: MessageEvent) => {
       const message = event.data;
       setIsLoading(false);
+      console.log("Received message:", message); // Log to check incoming message
       switch (message.command) {
         case "displayFileSummary":
           setFileSummary(message.content);
@@ -71,12 +72,17 @@ function App() {
           setBreakSuggestion(message.content);
           break;
         case "searchResults":
-          setSearchResults(message.results);
+          if (message.results) {
+            setSearchResults(message.results);
+          } else {
+            console.error("No results in search message:", message);
+          }
           break;
         default:
           console.warn("Unhandled message:", message);
       }
     };
+    
 
     window.addEventListener("message", handleMessage);
 
@@ -97,15 +103,21 @@ function App() {
   };
 
   const handleSearch = (query: string) => {
-    try {
-      window.vscode.postMessage({ type: 'globalSearch', data: query });
-      setSearchError(null);
-    } catch (error) {
-      setSearchError("An error occurred while searching.");
+    if (window.vscode) {
+      try {
+        console.log("Sending global search query:", query);
+        window.vscode.postMessage({ type: 'globalSearch', data: query });
+        setSearchError(null);
+      } catch (error) {
+        setSearchError("An error occurred while searching.");
+      }
+    } else {
+      console.error("VSCode API not available");
+      setSearchError("VSCode messaging is not available.");
     }
-    window.vscode.postMessage({ type: 'globalSearch', data: query });
   };
-
+  
+  
   const handleFileSelect = (filePath: string) => {
     setSelectedFile(filePath);
     setIsLoading(true);
@@ -158,12 +170,12 @@ function App() {
       theme="light"
     >
       <div className="logo">CodeSnip</div>
-      <GlobalSearch 
+      {/* <GlobalSearch 
           onSearch={handleSearch} 
           searchResults={searchResults} 
           isLoading={isLoading}
           error={searchError}
-        />
+        /> */}
       <Menu mode="inline" selectedKeys={[activeTab]} onClick={({ key }) => setActiveTab(key as string)}>
         <Menu.Item key="fileSummary" icon={<FileTextOutlined />}>File Summary</Menu.Item>
         <Menu.Item key="codeImprovement" icon={<CodeOutlined />}>Code Improvement</Menu.Item>
@@ -199,13 +211,14 @@ function App() {
           <div className="search-results content-card">
             <Title level={4}>Search Results</Title>
             <ul>
-              {searchResults.map((result, index) => (
-                <li key={index} onClick={() => handleFileClick(result.file)}>
-                  <strong>{result.file}</strong>
-                  <p>Summary: {result.summary}</p>
-                  <p>Matching Features: {result.features.join(", ")}</p>
-                </li>
-              ))}
+            {searchResults.map((result, index) => (
+  <li key={index} onClick={() => handleFileClick(result.file)}>
+    <strong>{result.file}</strong>
+    <p>Summary: {result.summary}</p>
+    <p>Matching Features: {Array.isArray(result.features) ? result.features.join(", ") : result.features}</p>
+  </li>
+))}
+
             </ul>
           </div>
         )}

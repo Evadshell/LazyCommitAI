@@ -227,6 +227,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
             break;
             case "globalSearch":
+              console.log(message.data);
               await handleGlobalSearch(message.data, panel);
               break;
         }
@@ -245,7 +246,11 @@ export function activate(context: vscode.ExtensionContext) {
 import { GoogleGenerativeAI } from '@google/generative-ai';
 dotenv.config();
 // ... (other imports and code remain the same)
+// Ensure this import is present
+// import Fuse from 'fuse.js'; // Correct Fuse.js import
 async function handleGlobalSearch(query: string, panel: vscode.WebviewPanel) {
+  const Fuse = (await import('fuse.js')).default;  // Dynamic import of Fuse.js
+
   const fileIndex = loadFileIndex();
   console.log(`Performing global search for query: ${query}`);
   console.log(`Loaded file index: `, fileIndex);
@@ -262,71 +267,36 @@ async function handleGlobalSearch(query: string, panel: vscode.WebviewPanel) {
   const searchData = Object.entries(fileIndex).map(([filePath, fileInfo]) => ({
     file: filePath,
     summary: fileInfo.summary,
-    features: fileInfo.features.join(', '),
+    features: fileInfo.features.join(', '), // Join features as a string for better searching
   }));
 
-  try {
-    const refinedResults = await getRefinedSearchResults(query, searchData);
-    panel.webview.postMessage({
-      command: "searchResults",
-      results: refinedResults,
-    });
-  } catch (error) {
-    console.error('Error refining search results with Gemini AI:', error);
-    panel.webview.postMessage({
-      command: "searchResults",
-      results: [],
-      error: 'Error refining search results with AI. Please try again later.',
-    });
-  }
-}
+  // Fuse.js search options
+  const options = {
+    includeScore: true,
+    keys: ['summary', 'features'], // Search in both summary and features
+    threshold: 0.5, // Adjust sensitivity of the search (lower is more strict, higher is more fuzzy)
+  };
+console.log(searchData);
+  // Initialize Fuse.js
+  const fuse = new Fuse(searchData, options);
 
-async function getRefinedSearchResults(query: string, searchData: Array<{ file: string; summary: string; features: string }>): Promise<Array<{ file: string; summary: string; features: string[] }>> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  const genAI = new GoogleGenerativeAI("AIzaSyBnrTkHanipQmjmJDgT2WQc9fk7IqOt4OE");
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  // Perform the search and log the raw results
+  const searchResults = fuse.search(query);
+  console.log("Raw Fuse.js search results:", searchResults);
+  
+  // Map Fuse.js results back to original structure
+  const refinedResults = searchResults.map(result => result.item);
+  console.log("Refined search results:", refinedResults);
 
-  const prompt = `
-    Based on the query: "${query}", analyze the following code summaries and features. 
-    Provide a list of the most relevant results in descending order of relevance with a brief explanation of why they match the query.
-    
-    Code Summaries and Features:
-    ${searchData.map(data => `File: ${data.file}\nSummary: ${data.summary}\nFeatures: ${data.features}`).join('\n\n')}
-  `;
-
-  const result = await model.generateContent(prompt);
-
-  const refinedResults = parseAIResponse(result.response.text());
-  return refinedResults;
-}
-
-function parseAIResponse(responseText: string): Array<{ file: string; summary: string; features: string[] }> {
-  // Custom logic to parse the AI response and transform it into the required data structure.
-  // You'll need to adjust this based on how Gemini AI returns the results.
-  const parsedResults: Array<{ file: string; summary: string; features: string[] }> = [];
-
-  const lines = responseText.split('\n');
-  let currentFile: any = null;
-
-  lines.forEach(line => {
-    if (line.startsWith('File:')) {
-      if (currentFile) {
-        parsedResults.push(currentFile);
-      }
-      currentFile = { file: line.replace('File: ', ''), summary: '', features: [] };
-    } else if (line.startsWith('Summary:')) {
-      currentFile.summary = line.replace('Summary: ', '');
-    } else if (line.startsWith('Features:')) {
-      currentFile.features = line.replace('Features: ', '').split(', ');
-    }
+  console.log("Sending search results:", refinedResults);
+  panel.webview.postMessage({
+    command: "searchResults",
+    results: refinedResults,
   });
-
-  if (currentFile) {
-    parsedResults.push(currentFile);
-  }
-
-  return parsedResults;
 }
+
+
+
 async function getFileSummary(fileContent: string): Promise<string> {
   const chatCompletion = await groq.chat.completions.create({
     messages: [
