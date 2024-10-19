@@ -210,22 +210,22 @@ export function activate(context: vscode.ExtensionContext) {
               });
             }
             break;
-          case "revertCommit":
-            const commitHash = message.data;
-            try {
-              await revertToCommit(commitHash);
-              panel.webview.postMessage({
-                command: "revertSuccess",
-                content: "Revert operation successful.",
-              });
-            } catch (err) {
-              console.error("Error reverting commit:", err);
-              panel.webview.postMessage({
-                command: "revertError",
-                content: "Error reverting commit.",
-              });
-            }
-            break;
+            case "revertCommit":
+              const commitHash = message.data;
+              try {
+                  await revertToCommit(commitHash);
+                  panel.webview.postMessage({
+                      command: "revertSuccess",
+                      content: "Revert operation successful.",
+                  });
+              } catch (error) {
+                  panel.webview.postMessage({
+                      command: "revertFailed",
+                      content: (error instanceof Error) ? error.message : String(error),
+                  });
+              }
+              break;
+          
             case "globalSearch":
               console.log(message.data);
               await handleGlobalSearch(message.data, panel);

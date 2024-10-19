@@ -58,18 +58,21 @@ export function getCommitHistory(): Promise<{ hash: string; message: string; dat
   //     });
   //   });
   // }
-
-  export function revertToCommit(commitHash: string){
-    exec(`git revert ${commitHash}`, (error, stdout, stderr) => {
+  export function revertToCommit(commitHash: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      exec(`git reset --hard ${commitHash}`, { cwd: vscode.workspace.rootPath }, (error) => {
         if (error) {
-            console.error(`Error reverting commit: ${stderr}`);
-            showToast('Failed to revert the commit', 'error'); // Show error message on failure
+          reject(`Error reverting to commit: ${error.message}`);
+          vscode.window.showErrorMessage(`Error reverting to commit: ${error.message}`);
         } else {
-            console.log(`Commit reverted successfully: ${stdout}`);
-            showToast('Commit reverted successfully', 'success'); // Show success message on completion
+          resolve();
+          vscode.window.showInformationMessage(`Successfully reverted to commit ${commitHash}`);
+          vscode.commands.executeCommand('workbench.action.reloadWindow'); // Reloads the window after revert
         }
+      });
     });
-}
+  }
+  
 
 // Function to show a toast message
 function showToast(message: string, type: 'success' | 'error' | 'default') {

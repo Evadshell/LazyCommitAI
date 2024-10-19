@@ -15,26 +15,27 @@ const CommitTree: React.FC = () => {
 
   useEffect(() => {
     window.vscode?.postMessage({ type: "getCommitHistory" });
-
+  
     const handleMessage = (event: MessageEvent) => {
       const message = event.data;
       if (message.command === "displayCommitHistory") {
         setCommitHistory(message.content);
+      } else if (message.command === "revertSuccess") {
+        alert("Commit successfully reverted!");
+        window.location.reload(); // Refresh the window after revert
+      } else if (message.command === "revertFailed") {
+        alert(`Revert failed: ${message.content}`);
       }
     };
-
+  
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, []);
+  
 
-  const handleRevert = (commitHash: string) => {
-    const confirmRevert = window.confirm(
-      "Are you sure you want to revert to this commit?"
-    );
-    if (confirmRevert) {
-      window.vscode?.postMessage({ type: "revertCommit", data: commitHash });
-    }
-  };
+const handleRevert = (commitHash: string) => {
+  window.vscode?.postMessage({ type: "revertCommit", data: commitHash });
+};
 
   return (
     <Card className="commit-tree-container">
