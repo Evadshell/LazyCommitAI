@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import './CodeImprovement.css';
+import { LightAsync as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vs2015 } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
 interface CodeImprovementProps {
     setImprovedCode: (code: string) => void;
@@ -8,6 +10,7 @@ interface CodeImprovementProps {
 const CodeImprovement: React.FC<CodeImprovementProps> = ({ setImprovedCode }) => {
     const [code, setCode] = useState('');
     const [instructions, setInstructions] = useState('');
+    const [improvedCode, setImprovedCodeState] = useState<string | null>(null);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -16,6 +19,13 @@ const CodeImprovement: React.FC<CodeImprovementProps> = ({ setImprovedCode }) =>
             data: { code, instructions } 
         });
     };
+
+    // Example listener for receiving improved code from the VSCode extension
+    window.addEventListener('message', (event) => {
+        if (event.data.type === 'improvedCode') {
+            setImprovedCodeState(event.data.code); // Update the improved code state
+        }
+    });
 
     return (
         <div className="code-improvement-container">
@@ -35,6 +45,16 @@ const CodeImprovement: React.FC<CodeImprovementProps> = ({ setImprovedCode }) =>
                 />
                 <button type="submit">Improve Code</button>
             </form>
+
+            {/* Improved code display */}
+            {improvedCode && (
+                <div className="improved-code-section">
+                    <h3>Improved Code:</h3>
+                    <SyntaxHighlighter language="javascript" style={vs2015}>
+                        {improvedCode}
+                    </SyntaxHighlighter>
+                </div>
+            )}
         </div>
     );
 };
