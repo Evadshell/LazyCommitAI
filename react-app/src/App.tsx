@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import FileTree from "./components/FileTree";
 import CodeImprovement from "./components/CodeImprovement";
+
+import Navbar from "./components/Navbar";
+import FileBreaker from "./components/FileBreaker";
+import CopilotPromptGenerator from "./components/CopilotPromptGenerator";
 import "./App.css";
 
 declare global {
@@ -15,6 +19,8 @@ function App() {
     const [fileSummary, setFileSummary] = useState("");
     const [selectedFile, setSelectedFile] = useState("");
     const [improvedCode, setImprovedCode] = useState("");
+    const [breakSuggestion, setBreakSuggestion] = useState("");
+    const [activeTab, setActiveTab] = useState("fileSummary");
 
     useEffect(() => {
         if (window.fileTree) {
@@ -29,6 +35,8 @@ function App() {
                 setFileTree(message.content);
             } else if (message.command === "displayImprovedCode") {
                 setImprovedCode(message.content);
+            } else if (message.command === "displayBreakSuggestion") {
+                setBreakSuggestion(message.content);
             }
         };
 
@@ -44,29 +52,49 @@ function App() {
         window.vscode?.postMessage({ type: "getFileSummary", data: filePath });
     };
 
+    const handleBreakFile = () => {
+        window.vscode?.postMessage({ type: "breakFile", data: selectedFile });
+    };
+
     return (
         <div className="app-container">
-            <div className="file-tree-container">
-                <h2>Project Structure</h2>
-                {fileTree ? (
-                    <FileTree
-                        fileStructure={fileTree}
-                        onFileClick={handleFileClick}
-                        selectedFile={selectedFile}
-                    />
-                ) : (
-                    <p>Loading file structure...</p>
-                )}
-            </div>
-            <div className="content-container">
-                <div className="file-summary-container">
-                    <h2>File Summary: {selectedFile}</h2>
-                    <pre>{fileSummary || "Select a file to view its summary."}</pre>
+            <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+            <div className="main-content">
+                <div className="file-tree-container">
+                    <h2>Project Structure</h2>
+                    {fileTree ? (
+                        <FileTree
+                            fileStructure={fileTree}
+                            onFileClick={handleFileClick}
+                            selectedFile={selectedFile}
+                        />
+                    ) : (
+                        <p>Loading file structure...</p>
+                    )}
                 </div>
-                <CodeImprovement setImprovedCode={setImprovedCode} />
-                <div className="improved-code-container">
-                    <h2>Improved Code</h2>
-                    <pre>{improvedCode || "Improved code will appear here."}</pre>
+                <div className="content-container">
+                    {activeTab === "fileSummary" && (
+                        <div className="file-summary-container">
+                            <h2>File Summary: {selectedFile}</h2>
+                            <pre>{fileSummary || "Select a file to view its summary."}</pre>
+                            <button onClick={handleBreakFile}>Suggest File Break</button>
+                        </div>
+                    )}
+                    {activeTab === "codeImprovement" && (
+                        <CodeImprovement setImprovedCode={setImprovedCode} />
+                    )}
+                    {activeTab === "copilotPrompt" && (
+                        <CopilotPromptGenerator />
+                    )}
+                    {activeTab === "improvedCode" && (
+                        <div className="improved-code-container">
+                            <h2>Improved Code</h2>
+                            <pre>{improvedCode || "Improved code will appear here."}</pre>
+                        </div>
+                    )}
+                    {activeTab === "fileBreaker" && (
+                        <FileBreaker breakSuggestion={breakSuggestion} />
+                    )}
                 </div>
             </div>
         </div>

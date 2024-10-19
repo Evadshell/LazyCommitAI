@@ -80,16 +80,27 @@ if (fileTree) {
                 panel.webview.postMessage({ command: 'displayFileSummary', content: 'Error reading file.' });
             }
             break;
-        case 'improveCode':
-            const { code, instructions } = message.data;
-            try {
-                const improvedCode = await improveCode(code, instructions);
-                panel.webview.postMessage({ command: 'displayImprovedCode', content: improvedCode });
-            } catch (err) {
-                console.error('Error improving code:', err);
-                panel.webview.postMessage({ command: 'displayImprovedCode', content: 'Error improving code.' });
-            }
-            break;
+            case 'improveCode':
+                const { code, instructions } = message.data;
+                try {
+                    const improvedCode = await improveCode(code, instructions);
+                    panel.webview.postMessage({ command: 'displayImprovedCode', content: improvedCode });
+                } catch (err) {
+                    console.error('Error improving code:', err);
+                    panel.webview.postMessage({ command: 'displayImprovedCode', content: 'Error improving code.' });
+                }
+                break;
+            case 'breakFile':
+                const filePathToBreak = message.data;
+                try {
+                    const fileContent = fs.readFileSync(filePathToBreak, 'utf-8');
+                    const breakSuggestion = await getFileBreakSuggestion(fileContent);
+                    panel.webview.postMessage({ command: 'displayBreakSuggestion', content: breakSuggestion });
+                } catch (err) {
+                    console.error('Error breaking file:', err);
+                    panel.webview.postMessage({ command: 'displayBreakSuggestion', content: 'Error breaking file.' });
+                }
+                break;
     }
 });
 });
@@ -136,6 +147,23 @@ async function improveCode(code: string, instructions: string): Promise<string> 
   });
 
   return chatCompletion.choices[0]?.message?.content || "Unable to improve code.";
+}
+async function getFileBreakSuggestion(fileContent: string): Promise<string> {
+  const chatCompletion = await groq.chat.completions.create({
+      messages: [
+          {
+              role: "system",
+              content: "You are an AI assistant that analyzes code files and suggests how to break them into smaller, more manageable files. Provide detailed suggestions on how to split the file, including new file names and their contents."
+          },
+          {
+              role: "user",
+              content: `Analyze the following code and suggest how to break it into smaller files:\n\n${fileContent}`
+          }
+      ],
+      model: "llama3-8b-8192",
+  });
+
+  return chatCompletion.choices[0]?.message?.content || "Unable to generate file break suggestion.";
 }
 function buildFileTreeStructure(dirPath: string): FileNode | null {
   const ignoredFolders = ['node_modules', '.git', '.vscode' , '.next'];

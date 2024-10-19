@@ -1,80 +1,116 @@
 body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   margin: 0;
   padding: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: #1e1e1e;
   color: #d4d4d4;
 }
 
-.app-container {
+.app {
   display: flex;
+  flex-direction: column;
   height: 100vh;
 }
 
-.file-tree-container {
-  width: 250px;
-  padding: 20px;
-  background-color: #252526;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
-  overflow-y: auto;
+.navbar {
+  background-color: #2d2d2d;
+  padding: 10px 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.content-container {
-  flex-grow: 1;
-  padding: 20px;
-  overflow-y: auto;
-  background-color: #1e1e1e;
-  display: flex;
-  flex-direction: column;
-}
-
-.file-summary-container,
-.code-improvement-container,
-.improved-code-container {
-  margin-bottom: 20px;
-}
-
-h2 {
-  margin-top: 0;
-  margin-bottom: 20px;
-  font-size: 1.2em;
+.navbar h1 {
+  margin: 0;
+  font-size: 1.2rem;
   color: #ffffff;
-  font-weight: normal;
 }
 
-pre {
-  background-color: #2d2d2d;
-  border: 1px solid #3e3e3e;
-  border-radius: 4px;
-  padding: 15px;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-size: 14px;
+.content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
 }
 
-textarea, input[type="text"] {
-  width: 100%;
+.file-explorer {
+  width: 250px;
+  background-color: #252526;
   padding: 10px;
+  overflow-y: auto;
+}
+
+.file-explorer h2 {
+  font-size: 1rem;
+  margin-top: 0;
   margin-bottom: 10px;
-  background-color: #2d2d2d;
-  border: 1px solid #3e3e3e;
+  color: #ffffff;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.file-content-container, .summary-container {
+  background-color: #1e1e1e;
+  border: 1px solid #3c3c3c;
   border-radius: 4px;
-  color: #d4d4d4;
+  padding: 10px;
+  margin-bottom: 20px;
+}
+
+.file-content-container h3, .summary-container h3 {
+  margin-top: 0;
+  font-size: 1rem;
+  color: #ffffff;
+}
+
+.file-content, .summary-content {
+  background-color: #252526;
+  border: 1px solid #3c3c3c;
+  border-radius: 4px;
+  padding: 10px;
   font-family: 'Consolas', 'Courier New', monospace;
-  font-size: 14px;
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow-x: auto;
 }
 
 button {
-  padding: 10px 20px;
   background-color: #0e639c;
   color: #ffffff;
   border: none;
+  padding: 8px 12px;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
+  transition: background-color 0.2s;
 }
 
 button:hover {
   background-color: #1177bb;
+}
+
+button:disabled {
+  background-color: #555555;
+  cursor: not-allowed;
+}
+
+.improvement-form {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.improvement-form input {
+  flex: 1;
+  padding: 8px;
+  font-size: 14px;
+  background-color: #3c3c3c;
+  border: 1px solid #555555;
+  color: #ffffff;
+  border-radius: 4px;
+}
+
+.improvement-form input::placeholder {
+  color: #a0a0a0;
 }

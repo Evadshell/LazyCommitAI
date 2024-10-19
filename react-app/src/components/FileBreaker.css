@@ -1,0 +1,19 @@
+.file-breaker {
+    padding: 20px;
+}
+
+.file-breaker h2 {
+    margin-bottom: 15px;
+}
+
+.file-breaker pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background-color: #2d2d2d;
+    border: 1px solid #3e3e3e;
+    border-radius: 4px;
+    padding: 15px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 14px;
+    color: #d4d4d4;
+}
